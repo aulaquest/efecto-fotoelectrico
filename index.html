@@ -14,9 +14,8 @@
             margin: 0;
             padding: 0.25em; 
             display: flex;
-            flex-direction: column; /* Para apilar simulador y footer */
-            justify-content: flex-start; /* Alinear al inicio */
-            align-items: center; 
+            justify-content: center; /* Centrar el simulador en la página */
+            align-items: flex-start; 
             min-height: 100vh;
         }
         .simulator-container-main {
@@ -28,6 +27,12 @@
             background-color: #f9fafb; 
             box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); 
             overflow: hidden; 
+            display: flex; /* Para organizar el footer interno */
+            flex-direction: column; /* Para apilar el footer interno */
+        }
+
+        .simulator-content { /* Nuevo div para agrupar todo excepto el footer interno */
+            flex-grow: 1;
         }
 
         .simulator-container-main .main-title { 
@@ -159,18 +164,20 @@
             font-weight: 600;
         }
 
-        .page-footer { 
+        .internal-footer { /* Estilo para el pie de página DENTRO del simulador */
             width: 100%;
             text-align: center;
-            padding: 0.5rem 0;
-            font-size: 0.6rem; 
-            color: #6b7280; 
+            padding: 0.3rem 0; /* Padding reducido */
+            font-size: 0.55rem; /* Muy pequeño */
+            color: #6b7280; /* text-gray-500 */
+            background-color: #f3f4f6; /* Mismo fondo que el título */
+            border-top: 1px solid #e5e7eb; /* Separador */
         }
-        .page-footer a {
+        .internal-footer a {
             color: #2563eb; 
             text-decoration: none;
         }
-        .page-footer a:hover {
+        .internal-footer a:hover {
             text-decoration: underline;
         }
 
@@ -214,72 +221,74 @@
 </head>
 <body>
     <div class="simulator-container-main w-full">
-        <header>
-            <h1 class="main-title">Efecto Fotoeléctrico</h1>
-        </header>
+        <div class="simulator-content"> {/* Nuevo wrapper para el contenido principal */}
+            <header>
+                <h1 class="main-title">Efecto Fotoeléctrico</h1>
+            </header>
 
-        <div class="top-controls-panel">
-            <div class="control-set">
-                <label for="intensitySlider">Intensidad:</label>
-                <div class="input-group">
-                    <input type="range" id="intensitySlider" min="1" max="100" value="50">
-                    <span id="intensityValue" class="value-output">50%</span>
+            <div class="top-controls-panel">
+                <div class="control-set">
+                    <label for="intensitySlider">Intensidad:</label>
+                    <div class="input-group">
+                        <input type="range" id="intensitySlider" min="1" max="100" value="50">
+                        <span id="intensityValue" class="value-output">50%</span>
+                    </div>
+                </div>
+                <div class="control-set">
+                    <label for="wavelengthSlider">Long. Onda (λ):</label>
+                    <div class="input-group">
+                        <input type="range" id="wavelengthSlider" min="200" max="700" value="500" step="5">
+                        <span id="wavelengthValue" class="value-output">500nm</span>
+                    </div>
+                </div>
+                <div class="control-set">
+                    <label for="materialSelect">Material:</label>
+                    <select id="materialSelect">
+                        <option value="Li">Litio (2.90eV)</option>
+                        <option value="Na">Sodio (2.75eV)</option>
+                        <option value="K">Potasio (2.30eV)</option>
+                        <option value="Cs">Cesio (2.14eV)</option>
+                        <option value="Ca">Calcio (2.87eV)</option>
+                        <option value="U">Uranio (3.60eV)</option> 
+                        <option value="Cu">Cobre (4.70eV)</option>
+                        <option value="Pt">Platino (6.35eV)</option>
+                    </select>
+                </div>
+                <div class="control-set">
+                    <label for="voltageSlider">Voltaje Frenado:</label>
+                     <div class="input-group">
+                        <input type="range" id="voltageSlider" min="-2" max="5" value="0" step="0.01"> 
+                        <span id="voltageValue" class="value-output">0.00V</span>
+                    </div>
+                </div>
+                 <div class="control-set checkbox-container">
+                    <input type="checkbox" id="showGradientCheckbox" class="text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="showGradientCheckbox" class="checkbox-label text-slate-600 whitespace-nowrap">Ver gradiente</label>
+                </div>
+                <div class="buttons-group">
+                     <button id="startPauseButton" class="action-button bg-green-500 hover:bg-green-600 text-white font-medium rounded transition-colors">Iniciar</button>
+                     <button id="resetButton" class="action-button bg-red-500 hover:bg-red-600 text-white font-medium rounded transition-colors">Reiniciar</button>
                 </div>
             </div>
-            <div class="control-set">
-                <label for="wavelengthSlider">Long. Onda (λ):</label>
-                <div class="input-group">
-                    <input type="range" id="wavelengthSlider" min="200" max="700" value="500" step="5">
-                    <span id="wavelengthValue" class="value-output">500nm</span>
-                </div>
-            </div>
-            <div class="control-set">
-                <label for="materialSelect">Material:</label>
-                <select id="materialSelect">
-                    <option value="Li">Litio (2.90eV)</option>
-                    <option value="Na">Sodio (2.75eV)</option>
-                    <option value="K">Potasio (2.30eV)</option>
-                    <option value="Cs">Cesio (2.14eV)</option>
-                    <option value="Ca">Calcio (2.87eV)</option>
-                    <option value="U">Uranio (3.60eV)</option> 
-                    <option value="Cu">Cobre (4.70eV)</option>
-                    <option value="Pt">Platino (6.35eV)</option>
-                </select>
-            </div>
-            <div class="control-set">
-                <label for="voltageSlider">Voltaje Frenado:</label>
-                 <div class="input-group">
-                    <input type="range" id="voltageSlider" min="-2" max="5" value="0" step="0.01"> 
-                    <span id="voltageValue" class="value-output">0.00V</span>
-                </div>
-            </div>
-             <div class="control-set checkbox-container">
-                <input type="checkbox" id="showGradientCheckbox" class="text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                <label for="showGradientCheckbox" class="checkbox-label text-slate-600 whitespace-nowrap">Ver gradiente</label>
-            </div>
-            <div class="buttons-group">
-                 <button id="startPauseButton" class="action-button bg-green-500 hover:bg-green-600 text-white font-medium rounded transition-colors">Iniciar</button>
-                 <button id="resetButton" class="action-button bg-red-500 hover:bg-red-600 text-white font-medium rounded transition-colors">Reiniciar</button>
-            </div>
-        </div>
 
-        <div class="p-1 sm:p-2"> 
-            <canvas id="visualizationCanvas" class="w-full rounded"></canvas> 
-        </div>
-        
-        <div class="results-panel">
-            <div class="ammeter-bar-container">
-                <div id="ammeterBarFill" class="ammeter-bar-fill"></div>
-                <span class="ammeter-label">A</span>
+            <div class="p-1 sm:p-2"> 
+                <canvas id="visualizationCanvas" class="w-full rounded"></canvas> 
             </div>
-            <p>E<sub>fotón</sub>: <span id="photonEnergyDisplay" class="data-value text-purple-700">0.00eV</span></p>
-            <p>Φ: <span id="workFunctionDisplay" class="data-value text-orange-600">0.00eV</span></p>
-            <p>KE<sub>máx</sub>: <span id="kineticEnergyDisplay" class="data-value text-green-700">0.00eV</span></p>
-        </div>
+            
+            <div class="results-panel">
+                <div class="ammeter-bar-container">
+                    <div id="ammeterBarFill" class="ammeter-bar-fill"></div>
+                    <span class="ammeter-label">A</span>
+                </div>
+                <p>E<sub>fotón</sub>: <span id="photonEnergyDisplay" class="data-value text-purple-700">0.00eV</span></p>
+                <p>Φ: <span id="workFunctionDisplay" class="data-value text-orange-600">0.00eV</span></p>
+                <p>KE<sub>máx</sub>: <span id="kineticEnergyDisplay" class="data-value text-green-700">0.00eV</span></p>
+            </div>
+        </div> {/* Fin de .simulator-content */}
+        <footer class="internal-footer">
+            <p>Simulación por <a href="https://aulaquest.com" target="_blank" rel="noopener noreferrer">Aulaquest</a>.</p>
+        </footer>
     </div>
-    <footer class="page-footer">
-        <p>Simulación por <a href="https://aulaquest.com" target="_blank" rel="noopener noreferrer">Aulaquest</a>.</p>
-    </footer>
 
     <script>
     (function() {
