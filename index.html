@@ -14,8 +14,9 @@
             margin: 0;
             padding: 0.25em; 
             display: flex;
-            justify-content: center; /* Centrar el simulador en la página */
-            align-items: flex-start; 
+            flex-direction: column; /* Para apilar simulador y footer */
+            justify-content: flex-start; /* Alinear al inicio */
+            align-items: center; 
             min-height: 100vh;
         }
         .simulator-container-main {
@@ -164,14 +165,14 @@
             font-weight: 600;
         }
 
-        .internal-footer { /* Estilo para el pie de página DENTRO del simulador */
+        .internal-footer { 
             width: 100%;
             text-align: center;
-            padding: 0.3rem 0; /* Padding reducido */
-            font-size: 0.55rem; /* Muy pequeño */
-            color: #6b7280; /* text-gray-500 */
-            background-color: #f3f4f6; /* Mismo fondo que el título */
-            border-top: 1px solid #e5e7eb; /* Separador */
+            padding: 0.3rem 0; 
+            font-size: 0.55rem; 
+            color: #6b7280; 
+            background-color: #f3f4f6; 
+            border-top: 1px solid #e5e7eb; 
         }
         .internal-footer a {
             color: #2563eb; 
@@ -221,7 +222,7 @@
 </head>
 <body>
     <div class="simulator-container-main w-full">
-        <div class="simulator-content"> {/* Nuevo wrapper para el contenido principal */}
+        <div class="simulator-content">
             <header>
                 <h1 class="main-title">Efecto Fotoeléctrico</h1>
             </header>
@@ -284,7 +285,7 @@
                 <p>Φ: <span id="workFunctionDisplay" class="data-value text-orange-600">0.00eV</span></p>
                 <p>KE<sub>máx</sub>: <span id="kineticEnergyDisplay" class="data-value text-green-700">0.00eV</span></p>
             </div>
-        </div> {/* Fin de .simulator-content */}
+        </div> 
         <footer class="internal-footer">
             <p>Simulación por <a href="https://aulaquest.com" target="_blank" rel="noopener noreferrer">Aulaquest</a>.</p>
         </footer>
