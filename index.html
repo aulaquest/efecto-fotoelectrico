@@ -15,15 +15,26 @@
     }
 
     .simulator-container-main {
-      width: 100%;
-      max-width: 680px;
-      margin: 0 auto;
-      border: none;
-      border-radius: 0;
-      background: white;
-      box-shadow: none;
-      overflow: hidden;
-    }
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  border: none;
+  border-radius: 0;
+  background: white;
+  box-shadow: none;
+  overflow: hidden;
+  padding: 1em;
+  box-sizing: border-box;
+}
+
+.simulator-container-main *,
+.simulator-container-main canvas,
+.simulator-container-main input,
+.simulator-container-main select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 
     .simulator-content {
       padding: 0;
