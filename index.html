@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador del Efecto Fotoeléctrico Mejorado</title>
+    <title>Simulador del Efecto Fotoeléctrico</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             overscroll-behavior: none;
-            background-color: #ffffff; /* bg-slate-100 */
+            background-color: #ffffff; 
             margin: 0;
             padding: 0.25em; 
             display: flex;
-            flex-direction: column; /* Para apilar simulador y footer */
-            justify-content: flex-start; /* Alinear al inicio */
+            flex-direction: column; 
+            justify-content: flex-start; 
             align-items: center; 
             min-height: 100vh;
         }
@@ -28,8 +28,8 @@
             background-color: #f9fafb; 
             box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); 
             overflow: hidden; 
-            display: flex; /* Para organizar el footer interno */
-            flex-direction: column; /* Para apilar el footer interno */
+            display: flex; 
+            flex-direction: column; 
         }
 
         .simulator-content { 
@@ -210,10 +210,10 @@
             transition: width 0.3s ease-out, background-color 0.3s ease-out;
             border-radius: 1px;
         }
-        .ammeter-label { 
-            position: absolute; right: 3px; top: 50%;
-            transform: translateY(-50%); font-size: 0.5rem; 
-            font-weight: bold; color: #4b5563; line-height: 1;
+        .ammeter-label-text { 
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: #4b5563;
         }
         .ammeter-value-text { 
             font-size: 0.6rem;
@@ -265,7 +265,7 @@
                     </select>
                 </div>
                 <div class="control-set">
-                    <label for="voltageSlider">Voltaje Frenado:</label>
+                    <label for="voltageSlider">Voltaje Aplicado (V):</label>
                      <div class="input-group">
                         <input type="range" id="voltageSlider" min="-2" max="5" value="0" step="0.01"> 
                         <span id="voltageValue" class="value-output">0.00V</span>
@@ -289,15 +289,15 @@
                 <div class="ammeter-display">
                     <div class="ammeter-bar-container">
                         <div id="ammeterBarFill" class="ammeter-bar-fill"></div>
-                        <span class="ammeter-label">A</span>
                     </div>
                     <span id="ammeterValueText" class="ammeter-value-text">0.0mA</span>
+                    <span class="ammeter-label-text ml-1">A</span>
                 </div>
                 <p>E<sub>fotón</sub>: <span id="photonEnergyDisplay" class="data-value text-purple-700">0.00eV</span></p>
                 <p>Φ: <span id="workFunctionDisplay" class="data-value text-orange-600">0.00eV</span></p>
                 <p>KE<sub>máx</sub>: <span id="kineticEnergyDisplay" class="data-value text-green-700">0.00eV</span></p>
             </div>
-        </div>
+        </div> 
         <footer class="internal-footer">
             <p>Simulación por <a href="https://aulaquest.com" target="_blank" rel="noopener noreferrer">Aulaquest</a>.</p>
         </footer>
@@ -350,39 +350,52 @@
         let anodeVisualX, anodeVisualY, anodeVisualWidth, anodeVisualHeight;
         let cathodeEmissionSurfaceX; 
         let anodeCollectionSurfaceX; 
-        let photonGun = { x: 0, y: 0, width: 0, height: 0, nozzleX: 0, nozzleY: 0 };
+        let photonGun = { x: 0, y: 0, width: 0, height: 0, nozzleOriginX: 0, nozzleOriginY: 0, nozzleVisualLength: 6, emissionAngle: 0 };
+        let powerSupplyPos = { x: 0, y: 0, width: 15, height: 25 }; 
+        let ammeterCircuitPos = { x: 0, y: 0, radius: 8 }; 
 
 
         function resizeCanvas() {
             const container = canvas.parentElement;
             canvas.width = container.clientWidth;
-            canvas.height = Math.max(90, container.clientWidth / (16/5.5)); 
+            canvas.height = Math.max(100, container.clientWidth / (16/6)); 
 
-            const tubePadding = canvas.width * 0.1; 
-            tubeX = tubePadding;
-            tubeY = canvas.height * 0.1; 
-            tubeWidth = canvas.width - 2 * tubePadding;
-            tubeHeight = canvas.height * 0.8; 
+            const tubePadding = canvas.width * 0.05; 
+            tubeX = tubePadding * 1.5; 
+            tubeY = canvas.height * 0.25; 
+            tubeWidth = canvas.width - 3 * tubePadding; 
+            tubeHeight = canvas.height * 0.55; 
             tubeRadius = tubeHeight / 2;
 
-            cathodeVisualWidth = 6; 
-            cathodeVisualHeight = tubeHeight * 0.45; 
-            cathodeVisualX = tubeX + tubeWidth * 0.12; 
+            cathodeVisualWidth = 5; 
+            cathodeVisualHeight = tubeHeight * 0.5; 
+            cathodeVisualX = tubeX + tubeWidth * 0.15; 
             cathodeVisualY = tubeY + (tubeHeight - cathodeVisualHeight) / 2;
             cathodeEmissionSurfaceX = cathodeVisualX + cathodeVisualWidth;
 
-            anodeVisualWidth = 6;
-            anodeVisualHeight = tubeHeight * 0.45; 
-            anodeVisualX = tubeX + tubeWidth * 0.88 - anodeVisualWidth; 
+            anodeVisualWidth = 5;
+            anodeVisualHeight = tubeHeight * 0.5; 
+            anodeVisualX = tubeX + tubeWidth * 0.85 - anodeVisualWidth; 
             anodeVisualY = tubeY + (tubeHeight - anodeVisualHeight) / 2;
             anodeCollectionSurfaceX = anodeVisualX;
 
-            photonGun.width = tubePadding * 0.5;
-            photonGun.height = tubeHeight * 0.2; 
-            photonGun.x = tubeX - photonGun.width - tubePadding * 0.05; 
-            photonGun.y = canvas.height / 2 - photonGun.height / 2; 
-            photonGun.nozzleX = photonGun.x + photonGun.width;
-            photonGun.nozzleY = photonGun.y + photonGun.height / 2;
+            photonGun.width = canvas.width * 0.07; 
+            photonGun.height = canvas.height * 0.05; 
+            photonGun.x = canvas.width / 2 - photonGun.width / 2; 
+            photonGun.y = tubeY - photonGun.height - canvas.height * 0.03; 
+            
+            photonGun.nozzleOriginX = photonGun.x + photonGun.width / 2;
+            photonGun.nozzleOriginY = photonGun.y + photonGun.height;
+            
+            const targetCathodeCenterX = cathodeVisualX + cathodeVisualWidth / 2;
+            const targetCathodeCenterY = cathodeVisualY + cathodeVisualHeight / 2;
+            photonGun.emissionAngle = Math.atan2(targetCathodeCenterY - photonGun.nozzleOriginY,
+                                               targetCathodeCenterX - photonGun.nozzleOriginX);
+            
+            powerSupplyPos.x = canvas.width / 2; 
+            powerSupplyPos.y = tubeY + tubeHeight + powerSupplyPos.height * 0.7; 
+            ammeterCircuitPos.x = powerSupplyPos.x + tubeWidth * 0.3; 
+            ammeterCircuitPos.y = powerSupplyPos.y;
             
             drawStaticElements(); 
         }
@@ -448,18 +461,30 @@
         }
         
         function drawStaticElements() {
+            if (!ctx || !canvas) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
 
-            ctx.fillStyle = "#f59e0b"; 
+            // Lanzador de Fotones
+            const gunBodyColor = "#f9a825"; // Amarillo más oscuro para el cuerpo
+            const gunNozzleColor = "#f57f17"; // Naranja para la boquilla
+            
+            ctx.fillStyle = gunBodyColor; 
             ctx.fillRect(photonGun.x, photonGun.y, photonGun.width, photonGun.height);
-            ctx.fillStyle = "#d97706"; 
-            ctx.beginPath(); 
-            ctx.moveTo(photonGun.nozzleX, photonGun.nozzleY - photonGun.height * 0.2);
-            ctx.lineTo(photonGun.nozzleX + 4, photonGun.nozzleY); 
-            ctx.lineTo(photonGun.nozzleX, photonGun.nozzleY + photonGun.height * 0.2);
+            
+            ctx.save();
+            ctx.translate(photonGun.nozzleOriginX, photonGun.nozzleOriginY);
+            ctx.rotate(photonGun.emissionAngle); 
+            ctx.fillStyle = gunNozzleColor; 
+            ctx.beginPath();
+            const nozzleBaseHalfWidth = photonGun.width * 0.25;
+            ctx.moveTo(0, -nozzleBaseHalfWidth);
+            ctx.lineTo(photonGun.nozzleVisualLength, 0);
+            ctx.lineTo(0, nozzleBaseHalfWidth);
             ctx.closePath();
             ctx.fill();
+            ctx.restore();
 
+            // Tubo
             ctx.beginPath();
             ctx.moveTo(tubeX + tubeRadius, tubeY);
             ctx.lineTo(tubeX + tubeWidth - tubeRadius, tubeY);
@@ -477,19 +502,82 @@
             ctx.fillStyle = "rgba(240, 249, 255, 0.3)"; 
             ctx.fill();
 
+            // Cátodo y Ánodo
             ctx.fillStyle = "#64748b"; 
             ctx.fillRect(cathodeVisualX, cathodeVisualY, cathodeVisualWidth, cathodeVisualHeight);
-            ctx.fillStyle = "#334155"; 
-            ctx.font = "6px Inter"; 
+            ctx.fillStyle = "#1e293b"; 
+            ctx.font = "8px Inter"; 
             ctx.textAlign = "center";
-            ctx.fillText(materialSelect.value, cathodeVisualX + cathodeVisualWidth/2, cathodeVisualY + cathodeVisualHeight + 6);
+            ctx.textBaseline = "middle"; 
+            ctx.fillText(materialSelect.value, cathodeVisualX + cathodeVisualWidth/2, cathodeVisualY + cathodeVisualHeight/2); 
 
             ctx.fillStyle = "#64748b"; 
             ctx.fillRect(anodeVisualX, anodeVisualY, anodeVisualWidth, anodeVisualHeight);
+
+            // Circuito Eléctrico
+            ctx.strokeStyle = "#4b5563"; 
+            ctx.lineWidth = 1.2;
+            const wireY = tubeY + tubeHeight + canvas.height * 0.05; 
+            
+            ctx.beginPath();
+            ctx.moveTo(cathodeVisualX + cathodeVisualWidth / 2, cathodeVisualY + cathodeVisualHeight); 
+            ctx.lineTo(cathodeVisualX + cathodeVisualWidth / 2, wireY);
+            ctx.lineTo(powerSupplyPos.x - powerSupplyPos.width / 2, wireY);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(anodeVisualX + anodeVisualWidth / 2, anodeVisualY + anodeVisualHeight);
+            ctx.lineTo(anodeVisualX + anodeVisualWidth / 2, wireY);
+            ctx.lineTo(ammeterCircuitPos.x + ammeterCircuitPos.radius, wireY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(ammeterCircuitPos.x - ammeterCircuitPos.radius, wireY);
+            ctx.lineTo(powerSupplyPos.x + powerSupplyPos.width / 2, wireY);
+            ctx.stroke();
+            
+            // Símbolo Fuente de Alimentación (Batería Clásica)
+            const battY = powerSupplyPos.y; // Centrar el símbolo de batería en su Y
+            const lineLengthShort = powerSupplyPos.width * 0.5;
+            const lineLengthLong = powerSupplyPos.width * 0.9;
+            const lineSpacing = 2.5; // Espacio entre líneas de la batería
+            ctx.fillStyle = "#4b5563"; 
+            // Línea larga (+)
+            ctx.fillRect(powerSupplyPos.x - lineLengthLong/2, battY - lineSpacing - 1, lineLengthLong, 2);
+            // Línea corta (-)
+            ctx.fillRect(powerSupplyPos.x - lineLengthShort/2, battY + lineSpacing - 1, lineLengthShort, 2);
+            
+            // Conexiones a la batería
+            ctx.beginPath();
+            ctx.moveTo(powerSupplyPos.x - powerSupplyPos.width / 2, wireY); // Desde el cable horizontal
+            ctx.lineTo(powerSupplyPos.x - powerSupplyPos.width / 2, battY + lineSpacing); // Al polo negativo
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(powerSupplyPos.x + powerSupplyPos.width / 2, wireY); // Desde el cable horizontal
+            ctx.lineTo(powerSupplyPos.x + powerSupplyPos.width / 2, battY - lineSpacing); // Al polo positivo
+            ctx.stroke();
+             // Flecha de variabilidad (opcional, pero común)
+            ctx.beginPath();
+            ctx.moveTo(powerSupplyPos.x - powerSupplyPos.width*0.8, powerSupplyPos.y + powerSupplyPos.height*0.4);
+            ctx.lineTo(powerSupplyPos.x + powerSupplyPos.width*0.8, powerSupplyPos.y - powerSupplyPos.height*0.4);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+
+            // Símbolo Amperímetro en el circuito
+            ctx.beginPath();
+            ctx.arc(ammeterCircuitPos.x, ammeterCircuitPos.y, ammeterCircuitPos.radius, 0, Math.PI * 2);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.font = "bold 7px Inter";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#1e293b";
+            ctx.fillText("A", ammeterCircuitPos.x, ammeterCircuitPos.y);
         }
 
         function drawElectricField(appliedVoltage_V) {
-            if (!showGradientCheckbox.checked || Math.abs(appliedVoltage_V) < 0.01) return;
+            if (!showGradientCheckbox.checked || Math.abs(appliedVoltage_V) < 0.01 || !ctx) return;
 
             const numLines = 5 + Math.floor(Math.abs(appliedVoltage_V) * 2.5); 
             const lineSpacing = cathodeVisualHeight / (numLines + 0.5) ; 
@@ -531,7 +619,7 @@
             }
             ctx.setLineDash([]); 
         }
-
+        
 
         function gameLoop(timestamp) {
             if (!isSimulating) {
@@ -549,17 +637,19 @@
 
             const photonSpawnRate = physics.intensityFactor * 0.55; 
             if (photons.length < 25 && Math.random() < photonSpawnRate + (photons.length === 0 && isSimulating ? 0.99 : 0) ) { 
-                photons.push({
-                    x: photonGun.nozzleX + Math.random() * 4 - 2, 
-                    y: photonGun.nozzleY - photonGun.height*0.1 + Math.random() * (photonGun.height*0.2), 
+                 photons.push({
+                    x: photonGun.nozzleOriginX, // Inician en la base de la boquilla visual
+                    y: photonGun.nozzleOriginY,
                     size: 2.2 + Math.random() * 1, 
-                    color: `rgba(250, 204, 21, ${0.85 + Math.random() * 0.15})` 
+                    color: `rgba(250, 204, 21, ${0.85 + Math.random() * 0.15})`,
+                    angle: photonGun.emissionAngle + (Math.random() - 0.5) * 0.25 // Ángulo con pequeña variación
                 });
             }
 
             for (let i = photons.length - 1; i >= 0; i--) {
                 const p = photons[i];
-                p.x += PHOTON_SPEED * deltaTime;
+                p.x += PHOTON_SPEED * Math.cos(p.angle) * deltaTime;
+                p.y += PHOTON_SPEED * Math.sin(p.angle) * deltaTime;
                 
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -588,7 +678,7 @@
                             hasBeenRepelled: false 
                         });
                     }
-                } else if (p.x > canvas.width + 10) {
+                } else if (p.x > canvas.width + 10 || p.x < -10 || p.y < -10 || p.y > canvas.height + 10) { 
                     photons.splice(i, 1);
                 }
             }
@@ -640,12 +730,14 @@
                 lastTime = performance.now(); 
                 if (!animationFrameId) { 
                     photons = []; 
-                    for(let k=0; k < 25 * (parseFloat(intensitySlider.value)/100) ; k++){ 
+                    const physics = calculatePhysics();
+                    for(let k=0; k < 20 * physics.intensityFactor ; k++){ 
                          photons.push({
-                            x: photonGun.nozzleX + Math.random() * 5 - 2.5, 
-                            y: photonGun.nozzleY - photonGun.height*0.2 + Math.random() * (photonGun.height*0.4),
-                            size: 2.5 + Math.random() * 1.5,
-                            color: `rgba(250, 204, 21, ${0.85 + Math.random() * 0.15})` 
+                            x: photonGun.nozzleOriginX, 
+                            y: photonGun.nozzleOriginY, 
+                            size: 2.2 + Math.random() * 1, 
+                            color: `rgba(250, 204, 21, ${0.85 + Math.random() * 0.15})`,
+                            angle: photonGun.emissionAngle + (Math.random() - 0.5) * 0.20 // Variación angular más controlada
                         });
                     }
                     animationFrameId = requestAnimationFrame(gameLoop);
@@ -660,7 +752,6 @@
                 }
             }
         }
-
         function resetSimulation() {
             isSimulating = false;
             if (animationFrameId) {
@@ -697,7 +788,6 @@
         voltageSlider.addEventListener('input', handleParamChange);
         showGradientCheckbox.addEventListener('change', handleParamChange);
 
-
         startPauseButton.addEventListener('click', toggleSimulation);
         resetButton.addEventListener('click', resetSimulation);
 
@@ -709,10 +799,9 @@
             }
         });
         
-        resizeCanvas();
+        resizeCanvas(); 
         updateDisplays();
         const initialPhysics = calculatePhysics(); 
-        drawStaticElements(); 
         drawElectricField(initialPhysics.appliedVoltage_V);
 
     })();
