@@ -10,7 +10,7 @@
         body {
             font-family: 'Inter', sans-serif;
             overscroll-behavior: none;
-            background-color: #ffffff; 
+            background-color: #e5e7eb; 
             margin: 0;
             padding: 0.25em; 
             display: flex;
@@ -76,7 +76,11 @@
             font-size: 0.65rem; 
             color: #4b5563; 
             margin-bottom: 0;
-            white-space: nowrap; 
+            /* white-space: nowrap; */ /* Permitir ajuste de línea para etiquetas largas */
+        }
+        .control-set label.voltage-label { 
+            white-space: normal; 
+            line-height: 1.1; 
         }
         .control-set .input-group { 
             display: flex;
@@ -265,7 +269,7 @@
                     </select>
                 </div>
                 <div class="control-set">
-                    <label for="voltageSlider">Voltaje Aplicado (V):</label>
+                    <label for="voltageSlider" class="voltage-label">Voltaje $V_{AC}$ (Ánodo-Cátodo):</label>
                      <div class="input-group">
                         <input type="range" id="voltageSlider" min="-2" max="5" value="0" step="0.01"> 
                         <span id="voltageValue" class="value-output">0.00V</span>
@@ -342,7 +346,7 @@
         let lastTime = 0;
         const PHOTON_SPEED = 180; 
         const ELECTRON_BASE_SPEED = 20; 
-        const MAX_PHOTO_CURRENT_mA = 10; 
+        const MAX_PHOTO_CURRENT_mA = 20; 
 
 
         let tubeX, tubeY, tubeWidth, tubeHeight, tubeRadius;
@@ -358,9 +362,9 @@
         function resizeCanvas() {
             const container = canvas.parentElement;
             canvas.width = container.clientWidth;
-            canvas.height = Math.max(100, container.clientWidth / (16/6)); 
+            canvas.height = Math.max(90, container.clientWidth / (16/5.5)); 
 
-            const tubePadding = canvas.width * 0.05; 
+            const tubePadding = canvas.width * 0.1; 
             tubeX = tubePadding * 1.5; 
             tubeY = canvas.height * 0.25; 
             tubeWidth = canvas.width - 3 * tubePadding; 
@@ -411,36 +415,48 @@
             const lambda_m = lambda_nm * 1e-9;
             const intensityFactor = parseFloat(intensitySlider.value) / 100; 
             const materialPhi_eV = materials[materialSelect.value];
-            const appliedVoltage_V = parseFloat(voltageSlider.value); 
+            const V_AC = parseFloat(voltageSlider.value); // V_AC (Voltaje Ánodo-Cátodo)
 
             const E_photon_J = (H_PLANCK * C_LIGHT) / lambda_m;
             const E_photon_eV = E_photon_J / EV_TO_J;
             
-            let KE_max_eV = 0; 
-            let emissionPossibleThisFrame = false; 
+            let KE_max_eV = 0; // Energía cinética con la que el electrón SALE del cátodo
+            let canBeEmitted = E_photon_eV >= materialPhi_eV; // Condición primaria de emisión
+            let electronsReachAnode = false; // Si los electrones emitidos llegan al ánodo
             let current_mA = 0; 
-            let currentStrengthForBar = 0; 
+            let currentStrengthForBar = 0; // Para la barra (0-1)
 
-            if (E_photon_eV > materialPhi_eV) {
+            if (canBeEmitted) {
                 KE_max_eV = E_photon_eV - materialPhi_eV;
-                const KE_at_anode_eV = KE_max_eV - appliedVoltage_V;
+                // Energía cinética que tendría el electrón al llegar al ánodo
+                const KE_at_anode_eV = KE_max_eV + V_AC; 
 
                 if (KE_at_anode_eV > 0) { 
-                    emissionPossibleThisFrame = true; 
-                    let rawCurrentFactor;
-                    if (appliedVoltage_V <=0) { 
-                        rawCurrentFactor = 1.0; 
-                    } else { 
-                         rawCurrentFactor = (KE_at_anode_eV / (KE_max_eV + 0.01)); 
-                    }
-                    currentStrengthForBar = Math.min(1, Math.max(0, rawCurrentFactor));
-                    current_mA = currentStrengthForBar * MAX_PHOTO_CURRENT_mA * intensityFactor; 
+                    electronsReachAnode = true;
                 }
+            }
+            
+            if (electronsReachAnode) {
+                // Si los electrones llegan, la corriente es proporcional a la intensidad.
+                // Si V_AC es negativo (frenador), la corriente efectiva se reduce.
+                if (V_AC >= 0) { // Voltaje acelerador o cero
+                    currentStrengthForBar = 1.0; // Todos los electrones emitidos contribuyen a la corriente máxima posible para esa intensidad
+                } else { // Voltaje frenador (V_AC < 0)
+                    // La fracción de electrones que superan el potencial de frenado.
+                    // KE_max_eV es la energía máxima. Los que tienen menos no llegarán.
+                    currentStrengthForBar = Math.max(0, (KE_max_eV + V_AC) / (KE_max_eV + 0.001)); // Evitar div por cero
+                }
+                current_mA = currentStrengthForBar * MAX_PHOTO_CURRENT_mA * intensityFactor;
+            } else {
+                // No llegan electrones o no se emiten en primer lugar
+                current_mA = 0;
+                currentStrengthForBar = 0;
             }
             
             photonEnergyDisplay.textContent = `${E_photon_eV.toFixed(2)}eV`;
             workFunctionDisplay.textContent = `${materialPhi_eV.toFixed(2)}eV`;
-            kineticEnergyDisplay.textContent = `${(E_photon_eV > materialPhi_eV) ? KE_max_eV.toFixed(2) : "0.00"}eV`;
+            // KE_max_eV es la energía con la que salen del cátodo.
+            kineticEnergyDisplay.textContent = `${canBeEmitted ? KE_max_eV.toFixed(2) : "0.00"}eV`;
             
             const barFillPercentage = (current_mA / (MAX_PHOTO_CURRENT_mA * intensityFactor + 0.001)) * 100 ; 
             ammeterBarFill.style.width = `${Math.min(100, Math.max(0,barFillPercentage))}%`;
@@ -457,16 +473,22 @@
                 ammeterBarFill.style.backgroundColor = "#ef4444"; 
             }
 
-            return { emissionPossible: emissionPossibleThisFrame, intensityFactor, currentStrength: currentStrengthForBar, KE_max_eV, appliedVoltage_V };
+            return { 
+                emissionPossible: canBeEmitted, 
+                electronsReachAnode: electronsReachAnode,
+                intensityFactor, 
+                currentStrength: currentStrengthForBar, 
+                KE_max_eV, 
+                appliedVoltage_V: V_AC 
+            };
         }
         
         function drawStaticElements() {
             if (!ctx || !canvas) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
 
-            // Lanzador de Fotones
-            const gunBodyColor = "#f9a825"; // Amarillo más oscuro para el cuerpo
-            const gunNozzleColor = "#f57f17"; // Naranja para la boquilla
+            const gunBodyColor = "#f9a825";
+            const gunNozzleColor = "#f57f17"; 
             
             ctx.fillStyle = gunBodyColor; 
             ctx.fillRect(photonGun.x, photonGun.y, photonGun.width, photonGun.height);
@@ -476,7 +498,7 @@
             ctx.rotate(photonGun.emissionAngle); 
             ctx.fillStyle = gunNozzleColor; 
             ctx.beginPath();
-            const nozzleBaseHalfWidth = photonGun.width * 0.25;
+            const nozzleBaseHalfWidth = photonGun.width * 0.2; 
             ctx.moveTo(0, -nozzleBaseHalfWidth);
             ctx.lineTo(photonGun.nozzleVisualLength, 0);
             ctx.lineTo(0, nozzleBaseHalfWidth);
@@ -484,7 +506,6 @@
             ctx.fill();
             ctx.restore();
 
-            // Tubo
             ctx.beginPath();
             ctx.moveTo(tubeX + tubeRadius, tubeY);
             ctx.lineTo(tubeX + tubeWidth - tubeRadius, tubeY);
@@ -502,7 +523,6 @@
             ctx.fillStyle = "rgba(240, 249, 255, 0.3)"; 
             ctx.fill();
 
-            // Cátodo y Ánodo
             ctx.fillStyle = "#64748b"; 
             ctx.fillRect(cathodeVisualX, cathodeVisualY, cathodeVisualWidth, cathodeVisualHeight);
             ctx.fillStyle = "#1e293b"; 
@@ -510,11 +530,18 @@
             ctx.textAlign = "center";
             ctx.textBaseline = "middle"; 
             ctx.fillText(materialSelect.value, cathodeVisualX + cathodeVisualWidth/2, cathodeVisualY + cathodeVisualHeight/2); 
+            ctx.fillStyle = "#4b5563"; 
+            ctx.font = "6px Inter";
+            ctx.fillText("Cátodo (-)", cathodeVisualX + cathodeVisualWidth/2, cathodeVisualY - 5);
+
 
             ctx.fillStyle = "#64748b"; 
             ctx.fillRect(anodeVisualX, anodeVisualY, anodeVisualWidth, anodeVisualHeight);
+            ctx.fillStyle = "#4b5563";
+            ctx.font = "6px Inter";
+            ctx.fillText("Ánodo (+/-)", anodeVisualX + anodeVisualWidth/2, anodeVisualY - 5);
 
-            // Circuito Eléctrico
+
             ctx.strokeStyle = "#4b5563"; 
             ctx.lineWidth = 1.2;
             const wireY = tubeY + tubeHeight + canvas.height * 0.05; 
@@ -536,35 +563,31 @@
             ctx.lineTo(powerSupplyPos.x + powerSupplyPos.width / 2, wireY);
             ctx.stroke();
             
-            // Símbolo Fuente de Alimentación (Batería Clásica)
-            const battY = powerSupplyPos.y; // Centrar el símbolo de batería en su Y
-            const lineLengthShort = powerSupplyPos.width * 0.5;
-            const lineLengthLong = powerSupplyPos.width * 0.9;
-            const lineSpacing = 2.5; // Espacio entre líneas de la batería
-            ctx.fillStyle = "#4b5563"; 
-            // Línea larga (+)
-            ctx.fillRect(powerSupplyPos.x - lineLengthLong/2, battY - lineSpacing - 1, lineLengthLong, 2);
-            // Línea corta (-)
-            ctx.fillRect(powerSupplyPos.x - lineLengthShort/2, battY + lineSpacing - 1, lineLengthShort, 2);
+            const battY = powerSupplyPos.y;
+            const battShortLineWidth = powerSupplyPos.width * 0.3; 
+            const battLongLineWidth = powerSupplyPos.width * 0.7;  
+            const battLineThickness = 2; 
+            const battTerminalSpacing = 2.5; 
             
-            // Conexiones a la batería
-            ctx.beginPath();
-            ctx.moveTo(powerSupplyPos.x - powerSupplyPos.width / 2, wireY); // Desde el cable horizontal
-            ctx.lineTo(powerSupplyPos.x - powerSupplyPos.width / 2, battY + lineSpacing); // Al polo negativo
+            ctx.fillStyle = "#4b5563"; 
+            ctx.fillRect(powerSupplyPos.x - battLongLineWidth/2, battY - battTerminalSpacing - battLineThickness/2, battLongLineWidth, battLineThickness); 
+            ctx.fillRect(powerSupplyPos.x - battShortLineWidth/2, battY + battTerminalSpacing - battLineThickness/2, battShortLineWidth, battLineThickness); 
+            
+            ctx.beginPath(); 
+            ctx.moveTo(powerSupplyPos.x - powerSupplyPos.width / 2, wireY);
+            ctx.lineTo(powerSupplyPos.x - powerSupplyPos.width / 2, battY + battTerminalSpacing ); 
             ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(powerSupplyPos.x + powerSupplyPos.width / 2, wireY); // Desde el cable horizontal
-            ctx.lineTo(powerSupplyPos.x + powerSupplyPos.width / 2, battY - lineSpacing); // Al polo positivo
+            ctx.beginPath(); 
+            ctx.moveTo(powerSupplyPos.x + powerSupplyPos.width / 2, wireY);
+            ctx.lineTo(powerSupplyPos.x + powerSupplyPos.width / 2, battY - battTerminalSpacing); 
             ctx.stroke();
-             // Flecha de variabilidad (opcional, pero común)
-            ctx.beginPath();
+             
+            ctx.beginPath(); 
             ctx.moveTo(powerSupplyPos.x - powerSupplyPos.width*0.8, powerSupplyPos.y + powerSupplyPos.height*0.4);
             ctx.lineTo(powerSupplyPos.x + powerSupplyPos.width*0.8, powerSupplyPos.y - powerSupplyPos.height*0.4);
             ctx.lineWidth = 1;
             ctx.stroke();
 
-
-            // Símbolo Amperímetro en el circuito
             ctx.beginPath();
             ctx.arc(ammeterCircuitPos.x, ammeterCircuitPos.y, ammeterCircuitPos.radius, 0, Math.PI * 2);
             ctx.lineWidth = 1;
@@ -576,12 +599,12 @@
             ctx.fillText("A", ammeterCircuitPos.x, ammeterCircuitPos.y);
         }
 
-        function drawElectricField(appliedVoltage_V) {
-            if (!showGradientCheckbox.checked || Math.abs(appliedVoltage_V) < 0.01 || !ctx) return;
+        function drawElectricField(V_AC) { 
+            if (!showGradientCheckbox.checked || Math.abs(V_AC) < 0.01 || !ctx) return;
 
-            const numLines = 5 + Math.floor(Math.abs(appliedVoltage_V) * 2.5); 
+            const numLines = 5 + Math.floor(Math.abs(V_AC) * 2.5); 
             const lineSpacing = cathodeVisualHeight / (numLines + 0.5) ; 
-            const fieldStrengthAlpha = Math.min(1, 0.4 + Math.abs(appliedVoltage_V) / 5 * 0.6); 
+            const fieldStrengthAlpha = Math.min(1, 0.4 + Math.abs(V_AC) / 5 * 0.6); 
 
             ctx.lineWidth = 1.5; 
             ctx.strokeStyle = `rgba(96, 165, 250, ${fieldStrengthAlpha})`; 
@@ -602,15 +625,15 @@
                 ctx.setLineDash([]); 
                 ctx.fillStyle = ctx.strokeStyle; 
 
-                if (appliedVoltage_V > 0) { 
-                    arrowX = midPointX + arrowSize / 1.8; 
-                    tipX = midPointX - arrowSize / 1.8;
+                if (V_AC > 0) { 
+                    arrowX = midPointX - arrowSize / 1.8; 
+                    tipX = midPointX + arrowSize / 1.8;
                     ctx.moveTo(tipX, y - arrowSize * 0.5);
                     ctx.lineTo(arrowX, y);
                     ctx.lineTo(tipX, y + arrowSize * 0.5);
-                } else if (appliedVoltage_V < 0) { 
-                    arrowX = midPointX - arrowSize / 1.8; 
-                    tipX = midPointX + arrowSize / 1.8;
+                } else if (V_AC < 0) { 
+                    arrowX = midPointX + arrowSize / 1.8; 
+                    tipX = midPointX - arrowSize / 1.8;
                     ctx.moveTo(tipX, y - arrowSize * 0.5);
                     ctx.lineTo(arrowX, y);
                     ctx.lineTo(tipX, y + arrowSize * 0.5);
@@ -638,11 +661,11 @@
             const photonSpawnRate = physics.intensityFactor * 0.55; 
             if (photons.length < 25 && Math.random() < photonSpawnRate + (photons.length === 0 && isSimulating ? 0.99 : 0) ) { 
                  photons.push({
-                    x: photonGun.nozzleOriginX, // Inician en la base de la boquilla visual
-                    y: photonGun.nozzleOriginY,
+                    x: photonGun.nozzleOriginX, 
+                    y: photonGun.nozzleOriginY, 
                     size: 2.2 + Math.random() * 1, 
                     color: `rgba(250, 204, 21, ${0.85 + Math.random() * 0.15})`,
-                    angle: photonGun.emissionAngle + (Math.random() - 0.5) * 0.25 // Ángulo con pequeña variación
+                    angle: photonGun.emissionAngle + (Math.random() - 0.5) * 0.25 
                 });
             }
 
@@ -659,14 +682,11 @@
                 if (p.x >= cathodeVisualX && p.x <= cathodeEmissionSurfaceX && 
                     p.y >= cathodeVisualY && p.y <= cathodeVisualY + cathodeVisualHeight) {
                     photons.splice(i, 1);
+                    // Condición de emisión: E_foton >= Phi (physics.emissionPossible)
                     if (physics.emissionPossible && Math.random() < physics.intensityFactor * 0.9) { 
                          let initialSpeedFactor = Math.sqrt(Math.max(0.01, physics.KE_max_eV)); 
                          let electronSpeed = ELECTRON_BASE_SPEED * initialSpeedFactor;
                          
-                         if (physics.appliedVoltage_V < 0) { 
-                             electronSpeed *= (1 + Math.abs(physics.appliedVoltage_V) * 0.35); 
-                         }
-
                          electrons.push({
                             x: cathodeEmissionSurfaceX + 1.5, 
                             y: p.y, 
@@ -674,7 +694,7 @@
                             initial_vx: Math.max(7, electronSpeed * (0.75 + Math.random() * 0.5) ), 
                             size: 1.5 + Math.random() * 0.6, 
                             color: `rgba(59, 130, 246, ${0.85 + Math.random() * 0.15})`,
-                            KE_initial_eV: physics.KE_max_eV,
+                            KE_initial_eV: physics.KE_max_eV, // KE con la que sale del cátodo
                             hasBeenRepelled: false 
                         });
                     }
@@ -685,24 +705,33 @@
 
             for (let i = electrons.length - 1; i >= 0; i--) {
                 const e = electrons[i];
-                let currentSpeed = e.vx;
+                let currentSpeed = e.vx; 
 
-                if (physics.appliedVoltage_V > 0 && !e.hasBeenRepelled) { 
-                    const KE_at_current_pos_eV = e.KE_initial_eV - physics.appliedVoltage_V * ((e.x - cathodeEmissionSurfaceX) / (anodeCollectionSurfaceX - cathodeEmissionSurfaceX + 0.01)); 
-                    
-                    if (KE_at_current_pos_eV <= 0) {
-                        e.vx = -e.initial_vx * 0.3; 
-                        e.hasBeenRepelled = true; 
-                        currentSpeed = e.vx;
-                    } else {
-                         currentSpeed = e.initial_vx * Math.sqrt(Math.max(0, KE_at_current_pos_eV) / (e.KE_initial_eV + 0.01));
-                         e.vx = currentSpeed; 
+                // Efecto del voltaje V_AC
+                if (physics.appliedVoltage_V < 0 && !e.hasBeenRepelled) { // Voltaje frenador (V_AC es negativo)
+                    // Energía cinética que le quedaría al electrón si llegara al ánodo
+                    const KE_at_anode_eV = e.KE_initial_eV + physics.appliedVoltage_V;
+                    if (KE_at_anode_eV <= 0) { // No tiene energía para llegar, se frena y debe ser repelido
+                        // Para simular el punto de retorno, necesitamos ver si ya perdió toda su KE
+                        const fractionDist = Math.max(0, Math.min(1, (e.x - cathodeEmissionSurfaceX) / (anodeCollectionSurfaceX - cathodeEmissionSurfaceX + 0.01)));
+                        const KE_lost_eV = Math.abs(physics.appliedVoltage_V) * fractionDist;
+                        if (e.KE_initial_eV - KE_lost_eV <= 0) {
+                            e.vx = -e.initial_vx * 0.3; 
+                            e.hasBeenRepelled = true;
+                        }
                     }
-                } else if (e.hasBeenRepelled) {
-                    currentSpeed = e.vx; 
+                    // Si KE_at_anode_eV > 0, el electrón aún tiene energía para moverse hacia el ánodo,
+                    // pero su velocidad se verá afectada progresivamente.
+                    // Esta parte de la física del movimiento bajo campo constante es compleja de simular perfectamente
+                    // sin integrar ecuaciones de movimiento. La simplificación actual es que se mueve con su vx
+                    // hasta que la condición de KE_at_anode_eV <= 0 lo repele.
+                } else if (physics.appliedVoltage_V > 0 && !e.hasBeenRepelled) { // Voltaje acelerador
+                    // La velocidad podría aumentar, pero por simplicidad, mantenemos la velocidad inicial
+                    // basada en KE_max_eV. El efecto principal es que llegarán al ánodo.
                 }
-
+                currentSpeed = e.vx; // Usar la velocidad (posiblemente invertida)
                 e.x += currentSpeed * deltaTime;
+
 
                 ctx.beginPath();
                 ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
@@ -737,7 +766,7 @@
                             y: photonGun.nozzleOriginY, 
                             size: 2.2 + Math.random() * 1, 
                             color: `rgba(250, 204, 21, ${0.85 + Math.random() * 0.15})`,
-                            angle: photonGun.emissionAngle + (Math.random() - 0.5) * 0.20 // Variación angular más controlada
+                            angle: photonGun.emissionAngle + (Math.random() - 0.5) * 0.20 
                         });
                     }
                     animationFrameId = requestAnimationFrame(gameLoop);
