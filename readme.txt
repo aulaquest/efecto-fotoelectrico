@@ -9,6 +9,8 @@ Cómo usar:
 
 Más en:
 👉 Versión online: https://aulaquest.github.io/efecto-fotoelectrico/
+🛠️ Ver código fuente en GitHub: https://github.com/aulaquest/efecto-fotoelectrico
+
 👉 Regístrate gratis y gana AulaCoins: https://aulaquest.com/
 👉 Contacto o soporte: jl.bernal.andradat@gmail.com
 
